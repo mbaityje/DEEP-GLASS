@@ -1,0 +1,19 @@
+#!/usr/bin/python
+#import sys, os, time
+from __future__ import print_function
+import numpy as np
+
+
+def ListaLogaritmica(x0,xn,n,ints=False,addzero=False):
+    assert(xn>x0)
+    assert(x0>0)
+    n=int(n)
+    y0=np.log(x0)
+    yn=np.log(xn)
+    delta=float(yn-y0)/(n-1)
+    listax=np.exp([y0+i*delta for i in range(n)])
+    if ints:
+        listax=np.unique(np.round(listax,0).astype(int))
+    if addzero:
+        listax=np.insert(listax,0,0)
+    return listax
