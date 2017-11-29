@@ -133,16 +133,21 @@ class conv22tanh(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x)
 
-
-class bruna(nn.Module):
-    def __init__(self, layers=[3*1024,500,10]):
-        super(bruna, self).__init__()
+class singleHiddenFullyConnected(nn.Module):
+    def __init__(self, layers=[3072,10,10]):
+        super(singleHiddenFullyConnected, self).__init__()
         self.fc1 = nn.Linear(layers[0], layers[1])
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(layers[1], layers[2])
-        
+        self.sigmoid = nn.Sigmoid()
+
     def forward(self, x):
-        out = self.fc1(x)
+        out = self.fc1(x.view(-1,3072))
         out = self.relu(out)
         out = self.fc2(out)
+        out = self.sigmoid(out)
         return out
+
+
+
+

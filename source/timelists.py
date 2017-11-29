@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #
-# Generates the three lists of times that we need for the simulations
+# Training program that generates the three lists of times that we need
+# for the simulations
 # - listat
 # - listatw
 # - listatbar

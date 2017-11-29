@@ -3,9 +3,9 @@
 # + Vengono letti nuovi parametri relativi ai tempi
 # + Vengono generate liste di tempi
 # + L'inizializzazione dei pesi viene fatta esplicitamente
-# - Viene calcolata la distribuzione dei pesi
-# - Viene calcolata la funzione di correlazione
-# - Il programma ora puo` correre con qualsiasi delle reti, non solo bruna e bruna10
+# + Viene calcolata la distribuzione dei pesi
+# + Viene calcolata la funzione di correlazione
+# + Il programma ora puo` correre con qualsiasi delle reti, non solo bruna10
 #
 # Note: La loss function viene salvata alla fine del run. Se si
 # riprende il run, viene salvata in un file separato, alla fine del
@@ -24,6 +24,7 @@ import sys
 import argparse
 from models.generic_models import loadNet
 import numpy as np #for the generation of the time lists
+from operator import mul
 
 #####################
 # Training settings #
@@ -52,8 +53,8 @@ parser.add_argument('--print-interval', type=int, default=50,
                     help='how many batches to wait before logging training status')
 parser.add_argument('--dataset', type=str, default='cifar10',
                     help='pick one: mnist, cifar10, cifar100')
-parser.add_argument('--model', type=str, default='convTest',
-                    help='Model to be loaded')
+parser.add_argument('--model', type=str, default='bruna10',
+                    help='Model to be loaded: bruna10 (default), convTest, and many more...')
 parser.add_argument('--out', type=str, default='./pretrained/',
                     help='Path to be saved (default: ./pretrained/)')
 parser.add_argument('--data-size', type=int, default=0,
@@ -78,6 +79,8 @@ parser.add_argument('--ntw', type=int, default=4, metavar='tw0',
                     help='number of times tw (default: 4)')
 parser.add_argument('--ntbar', type=int, default=10, metavar='tbar0',
                     help='number of times tbar (default: 10)')
+parser.add_argument('--distr', type=str, default='uniform',
+                    help='distribution of weights. uniform (default), uniform1, uniform01, zero, ones, normal')
 
 
 ##################
@@ -90,112 +93,143 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-#################
-# New Arguments #
-#################
-num_classes=10
-#The size of the image is needed
-if args.dataset=='cifar100' or args.dataset=='cifar10':
-    input_size=3*32*32
-elif args.dataset=='mnist':
-    input_size=28*28
-else:
-    print("Wrong args.dataset: ",args.dataset); sys.exit()
+##################
+# Checks on args #
+##################
+#Hidden size
+assert(args.hidden_size>0)
 
-############################
-# Size of the hidden layer #
-############################
-hidden_size=args.hidden_size
-assert(hidden_size>0)
 #Regularization parameters
 if args.weight_decay>=0:
     weight_decay=args.weight_decay
     bruna_decay=0
 else:
-    weight_decay=0
-    bruna_decay=-args.weight_decay
+	if args.model!='bruna10':
+		print("A negative weight decay is only accepted if the model is bruna10.")
+		sys.exit()
+	weight_decay=0
+	bruna_decay=-args.weight_decay
 
-############################
-# Modified Bruna's Network #
-############################
-class bruna(nn.Module):
-    def __init__(self, input_size, hidden_size, num_classes):
-        super(bruna, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, num_classes)
-        self.sigmoid = nn.Sigmoid()
+####################
+# Data and Network #
+####################
+#Choose model
+if args.dataset=='cifar100':
+	import models.cifar100 as my_models
+	model = getattr(my_models, args.model)
+elif args.dataset=='cifar10':
+	import models.cifar10 as my_models
+	model = getattr(my_models, args.model)
+elif args.dataset=='mnist':
+	import models.mnist as my_models
+	model = getattr(my_models, args.model)
+else:
+	print("Unknown dataset: ",args.dataset); 
+	sys.exit()
 
-    def forward(self, x):
-        out = self.fc1(x.view(-1,input_size))
-        out = self.relu(out)
-        out = self.fc2(out)
-        out = self.sigmoid(out)
-        return out
-
-########################
-# Load Bruna's network #
-########################
-iniPeriod=0
-model=bruna(input_size, hidden_size, num_classes)
-if args.load != 'nil':
+#Load network
+if args.load == 'nil':
+    model = model(hidden_size=args.hidden_size)
+    iniPeriod=0
+else:
     model=loadNet(args.load,model)
     from re import search
-    iniPeriod=1+int(search('_bruna_(.+?).pyT',args.load).group(1))
-num_weights=input_size*hidden_size+hidden_size*num_classes+hidden_size+num_classes
-inv_num_weights=1.0/num_weights
+    iniPeriod=1+int(search('_',args.model,'_(.+?).pyT',args.load).group(1))
+
 
 #################################
 # Initialization of the weights #
 #################################
-def weights_init(m,distr_w='uniform',distr_b='uniform'): #Initializes weights to some distribution
-    if distr_w == 'normal':
-        m.fc1.weight.data.normal_(0.0, 0.1)
-        m.fc2.weight.data.normal_(0.0, 0.1)
-    elif distr_w == 'zero':
-        m.fc1.weight.data.fill_(0.0)
-        m.fc2.weight.data.fill_(0.0)
-    elif distr_w == 'ones':
-        m.fc1.weight.data.fill_(1.0)
-        m.fc2.weight.data.fill_(1.0)
-    elif distr_w == 'uniform01':
-        m.fc1.weight.data.uniform_(0,1)
-        m.fc2.weight.data.uniform_(0,1)
-    elif distr_w == 'uniform':
-        m.fc1.weight.data.uniform_(-0.02,0.02)
-        m.fc2.weight.data.uniform_(-0.02,0.02)
-    if distr_b == 'normal':
-        m.fc1.bias.data.normal_(0.0, 0.01)
-        m.fc2.bias.data.normal_(0.0, 0.01)
-    elif distr_b == 'zero':
-        m.fc1.bias.data.fill_(0.0)
-        m.fc2.bias.data.fill_(0.0)
-    elif distr_b == 'ones':
-        m.fc1.bias.data.fill_(1.0)
-        m.fc2.bias.data.fill_(1.0)
-    elif distr_b == 'uniform01':
-        m.fc1.bias.data.uniform_(0,1)
-        m.fc2.bias.data.uniform_(0,1)
-    elif distr_b == 'uniform':
-        m.fc1.bias.data.uniform_(-0.02,0.02)
-        m.fc2.bias.data.uniform_(-0.02,0.02)
-weights_init(model)
-    
-#########################
-# The modified MSE loss #
-#########################
+
+# Function that yields all the optimizable parameters of the network (the network's size)
+def getNumParam(mymodel):
+	tot=0
+	for item in list(mymodel.parameters()):
+		n_layer=item.numel()
+		tot+=n_layer
+	return tot
+
+num_params=getNumParam(model)
+inv_num_params=1.0/num_params
+print("num_params=",num_params)
+
+# Function that initializes all the weights according to the chosen distribution
+def weightsInit(mymodel, distr='uniform'):
+	for m in mymodel.modules():
+		if isinstance(m, nn.Linear) \
+		or isinstance(m, nn.Conv2d) \
+		or isinstance(m, nn.Conv3d) \
+		or isinstance(m, nn.BatchNorm1d) \
+		or isinstance(m, nn.BatchNorm2d) \
+		or isinstance(m, nn.BatchNorm3d):
+			if distr == 'zero':
+				m.weight.data.fill_(0.0)
+				m.bias.data.fill_(0.0)
+			elif distr == 'ones':
+				m.weight.data.fill_(1.0)
+				m.bias.data.fill_(1.0)
+			elif distr == 'normal':
+				m.weight.data.normal_(0.0, 1.0)
+				m.bias.data.normal_(0.0, 1.0)
+			elif distr == 'uniform':
+				m.weight.data.uniform_(-0.02, 0.02)
+				m.bias.data.uniform_(-0.02, 0.02)
+			elif distr == 'uniform1':
+				m.weight.data.uniform_(-1.0, 1.0)
+				m.bias.data.uniform_(-1.0, 1.0)
+			elif distr == 'uniform01':
+				m.weight.data.uniform_(0.0, 1.0)
+				m.bias.data.uniform_(0.0, 1.0)
+			else:
+				print("Unrecognised weight distribution")
+				sys.exit()
+weightsInit(model, distr=args.distr)
+
+# Function that returns a flattened list of all the weights
+def getWeights(mymodel):
+
+	for i,item in enumerate(model.parameters()):
+		if 0==i:
+			full_list=item.data.view(item.data.numel())
+		else:
+			full_list=torch.cat( (full_list, item.data.view(item.data.numel()) ) )
+	return full_list
+
+##########################
+# Custom Regularizations #
+##########################
+#This is the same as in Bruna's paper
+def L1_regularizationBruna(mod):
+    return torch.norm(mod.fc2.weight,1) + torch.norm(mod.fc2.bias,1)
+
+#In Bruna's paper, they put a bound on the L2 norm of the single row - this is different.
+def L2_regularizationBruna(mod):
+    return torch.norm(mod.fc1.weight,2)+torch.norm(mod.fc1.bias,2)
+
+#################
+# Loss Function #
+#################
+
+# A Mean Square Error loss to mimic Bruna's paper
 def bruna_loss10(output, target):
+    num_classes=len(output[0]) #output is a B x num_classes matrix. len(output)=B, len(output[0])=num_classes
     this_batch_size=target.numel() #the last batch may be shorter
     temp=output[0].pow(2).sum()+1-2*output[0][target[0].data[0]]    
     for i in range(1,this_batch_size):
         temp+=output[i].pow(2).sum()+1-2*output[i][target[i].data[0]]
-    return temp/(this_batch_size*num_classes)
-#This is the same as in Bruna's paper
-def L1_regularization(mod):
-    return torch.norm(mod.fc2.weight,1) + torch.norm(mod.fc2.bias,1)
-#In Bruna's paper, they put a bound on the L2 norm of the single row - this is different.
-def L2_regularization(mod):
-    return torch.norm(mod.fc1.weight,2)+torch.norm(mod.fc1.bias,2)
+    myloss=temp/(this_batch_size*num_classes)
+    if bruna_decay>0:#This is because bruna_decay is often chosen to be zero
+    	myloss+=bruna_decay*(L1_regularizationBruna(model)+L2_regularizationBruna(model))
+    return myloss
+
+def loss_function(output, target):
+	if args.model=='bruna10':
+		myloss=bruna_loss10(output, target)
+	else:
+		myloss=F.nll_loss(output, target)
+	return myloss
+
+
 
 ################################
 # Generation of the time lists #
@@ -244,22 +278,19 @@ print("listat = ",listat)
 print("listatbar = ",listatbar)
 print("listatprime = ",listatprime)
 
-#####################
-# Extra Observables #
-#####################
+#############################################################
+# Definition of Correlation Functions and Other Observables #
+#############################################################
 #Histogram of the weights
 nbins=20
 histw_evol_x=torch.Tensor(args.ntw+1,nbins+1) #Histogram of all weights. The +1 is because I include time zero.
 histw_evol_y=torch.Tensor(args.ntw+1,nbins)
 #1-time quantities
 #Weights at time tw
-w_evol=torch.Tensor(args.ntw+1,num_weights)
-wtilde_evol=torch.Tensor(args.ntw+1,num_weights)
+w_evol=torch.Tensor(args.ntw+1,num_params)
 #2-time quantities
 #Correlation function
 corrw=torch.Tensor(args.ntw+1,args.nt+1)      #Correlation of the weights
-corrwtilde=torch.Tensor(args.ntw+1,args.nt+1) #Correlation of the rescaled weights
-
 
 
 ################
@@ -291,14 +322,6 @@ def logPerformance(model,period,batch_idx):
     loss_tuple = test(period,train_loader,print_c=True,label='Train')
     loss_hist['train'].append((period,batch_idx,loss_tuple))
 
-def getWeights(model):
-    paramlist=list(model.parameters())
-    pesi1=paramlist[0].data.view(paramlist[0].data.numel())
-    bias1=paramlist[1].data.view(paramlist[1].data.numel())
-    pesi2=paramlist[2].data.view(paramlist[2].data.numel())
-    bias2=paramlist[3].data.view(paramlist[3].data.numel())
-    return torch.cat((pesi1,bias1,pesi2,bias2),0)
-
 def train(period,n_step = 1000,lr=args.lr):
     model.train()
     optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
@@ -308,9 +331,7 @@ def train(period,n_step = 1000,lr=args.lr):
         data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
         output = model(data)
-        loss = bruna_loss10(output, target)
-        if bruna_decay>0:#This is because bruna_decay is often chosen to be zero
-            loss+=bruna_decay*(L1_regularization(model)+L2_regularization(model))
+        loss = loss_function(output, target)
         loss.backward()
 
         absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
@@ -321,7 +342,6 @@ def train(period,n_step = 1000,lr=args.lr):
             itw=np.where(listatw==absolute_batch_idx)[0][0]
             w=getWeights(model)
             w_evol[itw]=w.clone() #We need this for C(tw,t'=t+tw)
-            wtilde_evol[itw]=w*num_weights/w.abs().sum() #We need this for C(tw,t'=t+tw)
             histw=np.histogram(w.numpy(),bins=nbins,normed=False,weights=None)
             histw_evol_x[itw]=torch.from_numpy(np.array(histw[1]))
             histw_evol_y[itw]=torch.from_numpy(np.array(histw[0]))
@@ -329,16 +349,12 @@ def train(period,n_step = 1000,lr=args.lr):
         if absolute_batch_idx in listatprime: #Measure correlation functions
             itprime=list(listatprime).index(absolute_batch_idx)
             w=getWeights(model)
-            wtilde=w*num_weights/w.abs().sum()
             for icomb in range(howmany_tprime[itprime]):
                 [itw,it]=which_itwit[itprime][icomb]
                 assert(listatw[itw]+listat[it]==absolute_batch_idx)
                 square_corrw=torch.pow(w-w_evol[itw],2).sum()
-                square_corrwtilde=torch.pow(wtilde-wtilde_evol[itw],2).sum()
-                corrw[itw][it]=inv_num_weights*square_corrw
-                corrwtilde[itw][it]=inv_num_weights*square_corrwtilde
+                corrw[itw][it]=inv_num_params*square_corrw
                 assert(square_corrw>=0)
-                assert(square_corrwtilde>=0)
 
         optimizer.step()
         if batch_idx % args.print_interval == 0:
@@ -357,13 +373,13 @@ def test(period,data_loader,print_c=False,label='Test'):
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
         output = model(data)
-        test_loss += (bruna_loss10(output, target)+bruna_decay*(L1_regularization(model)+L2_regularization(model))).data[0]
+        test_loss += loss_function(output, target)
         pred = output.data.max(1)[1] # get the index of the max log-probability
         correct += pred.eq(target.data).cpu().sum()
 
-    test_loss = test_loss
+    test_loss = test_loss.data[0]
     test_loss /= len(data_loader) # loss function already averages over batch size
-    if print_c: print('\n{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(label,
+    if print_c: print('{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(label,
         test_loss, correct, len(data_loader.dataset),
         100. * correct / len(data_loader.dataset)))
     return (test_loss, correct, len(data_loader.dataset))
@@ -381,6 +397,7 @@ if args.data_size != 0:
     torch.save(list(train_loader.dataset),base_path+'.data')
 
 
+
 #####################
 # Train the network #
 #####################
@@ -396,8 +413,6 @@ torch.save(args,base_path+'.args')
 torch.save(loss_hist,base_path+"_{0}-{1}.hist".format("%05d"%iniPeriod,"%05d"%period))
 
 
-
-
 ###################
 #Some more saving #
 ###################
@@ -407,7 +422,7 @@ for itw in range(len(listatw)):
     delta=histw_evol_x[itw][1]-histw_evol_x[itw][0]
     xcenters=histw_evol_x[itw][0:nbins].numpy()+0.5*delta
     ycenters=histw_evol_y[itw].numpy()
-    normalized_ycenters=ycenters/(num_weights*delta)
+    normalized_ycenters=ycenters/(num_params*delta)
     # plt.plot(xcenters, normalized_ycenters, linewidth='3.0', label='t='+str(listatw[itw]))
     header='1)itw 2)tw 3)w 4)h(w) 5)p(w)' if itw==0 else ''
     np.savetxt(histfile, np.stack(([itw for i in range(len(xcenters))],[listatw[itw] for i in range(len(xcenters))],xcenters,ycenters,normalized_ycenters),axis=1), fmt='%.14g', delimiter=' ', newline='\n', header=header, footer='', comments='# ')
@@ -416,11 +431,11 @@ for itw in range(len(listatw)):
 histfile.close()
 #save C(tw,t')
 f1=open(args.out+args.dataset+'_C.txt', 'w+')
-f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)Ctilde(tw,tw+t)\n')
+f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t)\n')
 f1.write('#Time is measured in batches, so it should be multiplied by the batch size\n')
 for itprime in range(len(listatprime)):
     for icomb in range(howmany_tprime[itprime]):
         [itw,it]=which_itwit[itprime][icomb]
-        f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(corrw[itw][it])+' '+str(corrwtilde[itw][it])+'\n')
+        f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(corrw[itw][it])+'\n')
 f1.close()
 

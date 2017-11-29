@@ -1,3 +1,8 @@
+#
+# This is Levent's original program, from which I branched
+#
+
+
 from __future__ import print_function
 import torch
 torch.set_default_tensor_type('torch.DoubleTensor')
