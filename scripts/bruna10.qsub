@@ -1,0 +1,21 @@
+#!/bin/bash
+##########################################################
+#PBS -N bruna10
+#PBS -q glass
+##PBS -l walltime=30:00:00
+##PBS -o /home/mbaityje/deep-learning/logs/bruna10.$PBS_JOBID.txt
+##PBS -e /home/mbaityje/deep-learning/logs/bruna10.$PBS_JOBID.err
+##########################################################
+
+export PYTHONPATH=$PYTHONPATH:/home/mbaityje/miniconda2/pkgs/pytorch-0.2.0-py27h44c09ab_2cu75/lib/python2.7/site-packages:
+export PATH=/home/mbaityje/miniconda2/bin:$PATH
+
+rootDIR=/home/mbaityje/deep-learning
+cd $rootDIR
+exeDIR=$rootDIR/source
+prog=bruna10.py
+logFILE=$outDIR/log.txt
+
+echo "python $exeDIR/$prog --dataset=$dataset --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom" >> $logFILE
+(time (python $exeDIR/$prog --dataset=$dataset --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom) 2>&1) >> $logFILE
+echo "FINISHED" >> $logFILE
