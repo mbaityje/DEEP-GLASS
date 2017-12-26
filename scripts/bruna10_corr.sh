@@ -78,11 +78,11 @@ do
 			do
 			    echo "$model LR=$LR, BS=$BS, m=$HS, WD=$WD, ISAM=$ISAM, INIT_DISTR=$INIT_DISTR"
 			    
-			#--Output directory--
+			    #--Output directory--
 			    outDIR=$outROOT/${model}corr/m$HS/B${BS}/LR$LR/WD$WD/MOM$MOMENTUM/$INIT_DISTR/sam$ISAM/
 			    mkdir -p $outDIR
 			    
-			#--Backups--
+			    #--Backups--
 			    if [ $USE_BACKUPS == "yes" ]; then
 				lastSave=`ls -rt $dataDIR/*.pyT|tail -1`
 				echo "LAST SAVE: $lastSave"
@@ -94,10 +94,10 @@ do
 				exit
 			    fi
 			    
-			#It's crappy but it does for our purpose
+			    #It's crappy but it does for our purpose
 			    SEED=`od -vAn -N4 -tu4 < /dev/urandom | sed 's/[[:space:]]//g'`
 			    
-			#--Launch in interactive (PennPuter) or via queues (kondo)
+			    #--Launch in interactive (PennPuter) or via queues (kondo)
 			    if [ $SYSTEM == "PennPuter" ]
 			    then
 	    			echo "python $exeDIR/$prog --dataset=$dataset --seed=$SEED --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --momentum=$MOMENTUM --t0=$T0 --tw0=$TW0 --tbar0=$TBAR0 --nt=$NT --ntw=$NTW --ntbar=$NTBAR  --distr_w=$INIT_DISTR --distr_b=$INIT_DISTR"
