@@ -50,7 +50,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--print-interval', type=int, default=50,
-                    help='how many batches to wait before logging training status')
+                    help='how many batches to wait before logging training status. default: 50. 0: do not log.')
 parser.add_argument('--dataset', type=str, default='cifar10',
                     help='pick one: mnist, cifar10, cifar100')
 parser.add_argument('--model', type=str, default='bruna10',
@@ -79,8 +79,10 @@ parser.add_argument('--ntw', type=int, default=4, metavar='tw0',
                     help='number of times tw (default: 4)')
 parser.add_argument('--ntbar', type=int, default=10, metavar='tbar0',
                     help='number of times tbar (default: 10)')
-parser.add_argument('--distr', type=str, default='uniform',
-                    help='distribution of weights. uniform (default), uniform1, uniform01, zero, ones, normal')
+parser.add_argument('--distr', type=str, default='default',
+                    help='distribution of weights. pytorch default (default), uniform, uniform1, uniform01, zero, ones, normal')
+parser.add_argument('--losstxt', type=bool, default=False,
+                    help='If True, saves loss and accuracy on a txt file every time it is calculated (default is False).')
 
 
 ##################
@@ -92,6 +94,15 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
+
+##########
+# Output #
+##########
+if True==args.losstxt:
+    losstxt_name=args.out+args.model+'_loss.txt'
+    f = open(losstxt_name, 'w')
+    f.write("#1)time 2)train_acc 3)test_acc 4)train_loss 5)test_loss\n")
+    f.close()
 
 ##################
 # Checks on args #
@@ -183,7 +194,8 @@ def weightsInit(mymodel, distr='uniform'):
 			else:
 				print("Unrecognised weight distribution")
 				sys.exit()
-weightsInit(model, distr=args.distr)
+if 'default' != args.distr:
+    weightsInit(model, distr=args.distr)
 
 # Function that returns a flattened list of all the weights
 def getWeights(mymodel):
@@ -316,16 +328,31 @@ def updateOptimizer(old,fun,model,period,batch_idx,*f_args):
     return old
 
 loss_hist = {'train':[],'test':[],'lr':[]} ##losses before steps
-def logPerformance(model,period,batch_idx):
+def logPerformance(model, period, batch_idx, n_step):
     loss_tuple = test(period,test_loader,print_c=True)
     loss_hist['test'].append((period,batch_idx,loss_tuple))
+    test_loss=loss_tuple[0]
+    test_acc=float(loss_tuple[1])/loss_tuple[2]
     loss_tuple = test(period,train_loader,print_c=True,label='Train')
     loss_hist['train'].append((period,batch_idx,loss_tuple))
+    if args.losstxt == True:
+        absolute_batch_idx=batch_idx+(period-1)*n_step
+        train_acc=float(loss_tuple[1])/loss_tuple[2]
+        train_loss=loss_tuple[0]
+        f = open(losstxt_name, 'a')
+        f.write(str(absolute_batch_idx)+" "+str(train_acc)+" "+str(test_acc)+" "+str(train_loss)+" "+str(test_loss)+"\n")
+        f.close()
+    #1)time 2)train_acc 3)test_acc 4)train_loss 5)test_loss
 
-def train(period,n_step = 1000,lr=args.lr):
+
+    
+def train(period, n_step = 1000, lr=args.lr):
     model.train()
     optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
     for batch_idx, (data, target) in enumerate(circ_train_loader):
+        absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
+        print("abs_batch_idx:",absolute_batch_idx," batch_idx:",batch_idx,"epoch:",absolute_batch_idx/len(train_loader)," period:",period-1)
+        #print("ibatch:",batch_idx)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
@@ -334,9 +361,8 @@ def train(period,n_step = 1000,lr=args.lr):
         loss = loss_function(output, target)
         loss.backward()
 
-        absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
         if absolute_batch_idx in listatbar: #Loss function and accuracy
-            logPerformance(model,period,batch_idx)
+            logPerformance(model,period,batch_idx, n_step)
 
         if absolute_batch_idx in listatw: #Save states w and measure p(w)
             itw=np.where(listatw==absolute_batch_idx)[0][0]
@@ -357,14 +383,14 @@ def train(period,n_step = 1000,lr=args.lr):
                 assert(square_corrw>=0)
 
         optimizer.step()
-        if batch_idx % args.print_interval == 0:
+        if args.print_interval and batch_idx % args.print_interval == 0:
             print('Train Period: {} [{}/{} ({:.0f}%)]\tLoss: {: .6f}'.format(
                 period, batch_idx * len(data), n_step * len(data),
                 100. * batch_idx / n_step, loss.data[0])) 
         if batch_idx==n_step:
             break
 
-def test(period,data_loader,print_c=False,label='Test'):
+def test(period,data_loader,print_c=False,label='Test '):
     model.eval()
     test_loss = 0
     correct = 0
@@ -379,7 +405,7 @@ def test(period,data_loader,print_c=False,label='Test'):
 
     test_loss = test_loss.data[0]
     test_loss /= len(data_loader) # loss function already averages over batch size
-    if print_c: print('{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(label,
+    if print_c: print('{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(label,
         test_loss, correct, len(data_loader.dataset),
         100. * correct / len(data_loader.dataset)))
     return (test_loss, correct, len(data_loader.dataset))
