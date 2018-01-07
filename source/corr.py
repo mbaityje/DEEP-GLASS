@@ -302,7 +302,8 @@ histw_evol_y=torch.Tensor(args.ntw+1,nbins)
 w_evol=torch.Tensor(args.ntw+1,num_params)
 #2-time quantities
 #Correlation function
-corrw=torch.Tensor(args.ntw+1,args.nt+1)      #Correlation of the weights
+corrw=torch.Tensor(args.ntw+1,args.nt+1)      #Correlation: \sum [w(t)-w(t')]^2
+dorrw=torch.Tensor(args.ntw+1,args.nt+1)      #Correlation: \sum [w(t)-w(t')]^4
 
 
 ################
@@ -342,8 +343,6 @@ def logPerformance(model, period, batch_idx, n_step):
         f = open(losstxt_name, 'a')
         f.write(str(absolute_batch_idx)+" "+str(train_acc)+" "+str(test_acc)+" "+str(train_loss)+" "+str(test_loss)+"\n")
         f.close()
-    #1)time 2)train_acc 3)test_acc 4)train_loss 5)test_loss
-
 
     
 def train(period, n_step = 1000, lr=args.lr):
@@ -351,7 +350,6 @@ def train(period, n_step = 1000, lr=args.lr):
     optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
     for batch_idx, (data, target) in enumerate(circ_train_loader):
         absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
-        print("abs_batch_idx:",absolute_batch_idx," batch_idx:",batch_idx,"epoch:",absolute_batch_idx/len(train_loader)," period:",period-1)
         #print("ibatch:",batch_idx)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -362,6 +360,7 @@ def train(period, n_step = 1000, lr=args.lr):
         loss.backward()
 
         if absolute_batch_idx in listatbar: #Loss function and accuracy
+            print("abs_batch_idx:",absolute_batch_idx," batch_idx:",batch_idx,"epoch:",absolute_batch_idx/len(train_loader)," period:",period-1)
             logPerformance(model,period,batch_idx, n_step)
 
         if absolute_batch_idx in listatw: #Save states w and measure p(w)
@@ -379,8 +378,11 @@ def train(period, n_step = 1000, lr=args.lr):
                 [itw,it]=which_itwit[itprime][icomb]
                 assert(listatw[itw]+listat[it]==absolute_batch_idx)
                 square_corrw=torch.pow(w-w_evol[itw],2).sum()
-                corrw[itw][it]=inv_num_params*square_corrw
+                fourth_corrw=torch.pow(w-w_evol[itw],4).sum()
+                corrw[itw][it]=square_corrw
+                dorrw[itw][it]=fourth_corrw
                 assert(square_corrw>=0)
+                assert(fourth_corrw>=0)
 
         optimizer.step()
         if args.print_interval and batch_idx % args.print_interval == 0:
@@ -457,11 +459,11 @@ for itw in range(len(listatw)):
 histfile.close()
 #save C(tw,t')
 f1=open(args.out+args.dataset+'_C.txt', 'w+')
-f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t)\n')
+f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2\n')
 f1.write('#Time is measured in batches, so it should be multiplied by the batch size\n')
 for itprime in range(len(listatprime)):
     for icomb in range(howmany_tprime[itprime]):
         [itw,it]=which_itwit[itprime][icomb]
-        f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(corrw[itw][it])+'\n')
+        f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ (str(dorrw[itw][it]/(corrw[itw][it]*dorrw[itw][it])) if listat[it]>0 else 'nan') +'\n')
 f1.close()
 
