@@ -15,6 +15,6 @@ exeDIR=$rootDIR/source
 prog=corr.py
 logFILE=$outDIR/log.txt
 
-echo "python $$prog --dataset=$dataset --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --distr=$INIT_DISTR" >> $logFILE
+echo "python $prog --dataset=$dataset --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --distr=$INIT_DISTR" >> $logFILE
 (time (python $exeDIR/$prog --dataset=$dataset --steps_per_period=$spp --seed=$SEED --periods=$periods --batch-size=$BS --test-batch-size=$BS --momentum=$MOMENTUM --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --t0=$T0 --tw0=$TW0 --tbar0=$TBAR0 --nt=$NT --ntw=$NTW --ntbar=$NTBAR --distr=$INIT_DISTR) 2>&1) >> $logFILE
 echo "FINISHED" >> $logFILE
