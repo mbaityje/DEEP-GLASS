@@ -95,11 +95,18 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-##########
-# Output #
-##########
+######################
+# Output information #
+######################
+base_path = args.out+args.dataset
+save_at = set(range(0,args.periods+1,max(1,args.save_every)))
+save_at.add(args.periods)
+if args.data_size != 0:
+    torch.save(list(train_loader.dataset),base_path+'.data')
+
+
 if True==args.losstxt:
-    losstxt_name=args.out+args.model+'_loss.txt'
+    losstxt_name=base_path+'_loss.txt'
     f = open(losstxt_name, 'w')
     f.write("#1)time 2)train_acc 3)test_acc 4)train_loss 5)test_loss\n")
     f.close()
@@ -415,19 +422,6 @@ def test(period,data_loader,print_c=False,label='Test '):
     return (test_loss, correct, len(data_loader.dataset))
 
 
-
-
-######################
-# Output information #
-######################
-base_path = args.out+'_'.join([args.dataset,str(args.data_size),str(args.batch_size),args.model])
-save_at = set(range(0,args.periods+1,max(1,args.save_every)))
-save_at.add(args.periods)
-if args.data_size != 0:
-    torch.save(list(train_loader.dataset),base_path+'.data')
-
-
-
 #####################
 # Train the network #
 #####################
@@ -447,7 +441,7 @@ torch.save(loss_hist,base_path+"_{0}-{1}.hist".format("%05d"%iniPeriod,"%05d"%pe
 #Some more saving #
 ###################
 #Save P(w)
-histfile=file(args.out+args.dataset+'_histw.txt','a')
+histfile=file(base_path+'_histw.txt','a')
 for itw in range(len(listatw)):
     delta=histw_evol_x[itw][1]-histw_evol_x[itw][0]
     xcenters=histw_evol_x[itw][0:nbins].numpy()+0.5*delta
@@ -460,12 +454,12 @@ for itw in range(len(listatw)):
 # plt.show()
 histfile.close()
 #save C(tw,t')
-f1=open(args.out+args.dataset+'_C.txt', 'w+')
+f1=open(base_path+'_C.txt', 'w+')
 f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2\n')
 f1.write('#Time is measured in batches, so it should be multiplied by the batch size\n')
 for itprime in range(len(listatprime)):
     for icomb in range(howmany_tprime[itprime]):
         [itw,it]=which_itwit[itprime][icomb]
-        f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ (str(dorrw[itw][it]/(corrw[itw][it]*dorrw[itw][it])) if listat[it]>0 else 'nan') +'\n')
+        f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ str(dorrw.numpy()[itw][it]/(corrw.numpy()[itw][it]*corrw.numpy()[itw][it])) +'\n')
 f1.close()
 
