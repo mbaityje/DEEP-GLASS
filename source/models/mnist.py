@@ -1,5 +1,14 @@
-from models.generic_models import conv22tanh,conv22relu,loadNet
+from models.generic_models import conv22tanh,conv22relu,loadNet,singleHiddenFullyConnected
 
+def bruna10(pretrained_path=False, hidden_size=10,**kwargs):
+    """Constructs a very simple convNet
+    Args:
+        pretrained_path (bool): If True, returns the pretrained model on the path
+    """
+    model = singleHiddenFullyConnected(layers=[784,hidden_size,10])
+    if pretrained_path:
+        return loadNet(pretrained_path,model)
+    return model
 
 def convTest(pretrained_path=False, **kwargs):
     """Constructs a very simple convNet
