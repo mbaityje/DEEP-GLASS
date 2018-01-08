@@ -456,7 +456,7 @@ histfile.close()
 #save C(tw,t')
 f1=open(base_path+'_C.txt', 'w+')
 f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2\n')
-f1.write('#Time is measured in batches, so it should be multiplied by the batch size\n')
+f1.write('#Time is measured in batches\n')
 for itprime in range(len(listatprime)):
     for icomb in range(howmany_tprime[itprime]):
         [itw,it]=which_itwit[itprime][icomb]
