@@ -350,6 +350,7 @@ def train(period, n_step = 1000, lr=args.lr):
     model.train()
     optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
     for batch_idx, (data, target) in enumerate(circ_train_loader):
+        print("batch_idx:",batch_idx,"period:",period)
         absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
         #print("ibatch:",batch_idx)
         if args.cuda:
@@ -390,7 +391,7 @@ def train(period, n_step = 1000, lr=args.lr):
             print('Train Period: {} [{}/{} ({:.0f}%)]\tLoss: {: .6f}'.format(
                 period, batch_idx * len(data), n_step * len(data),
                 100. * batch_idx / n_step, loss.data[0])) 
-        if batch_idx==n_step:
+        if batch_idx==n_step-1:
             break
 
 def test(period,data_loader,print_c=False,label='Test '):
