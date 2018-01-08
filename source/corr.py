@@ -357,9 +357,7 @@ def train(period, n_step = 1000, lr=args.lr):
     model.train()
     optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
     for batch_idx, (data, target) in enumerate(circ_train_loader):
-        print("batch_idx:",batch_idx,"period:",period)
         absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
-        #print("ibatch:",batch_idx)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
