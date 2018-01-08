@@ -108,7 +108,8 @@ if True==args.losstxt:
 # Checks on args #
 ##################
 #Hidden size
-assert(args.hidden_size>0)
+if args.model=='bruna10':
+    assert(args.hidden_size>0)
 
 #Regularization parameters
 if args.weight_decay>=0:
