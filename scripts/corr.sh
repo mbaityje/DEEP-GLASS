@@ -2,7 +2,11 @@
 # Script to launch bruna network
 # 
 
-module load python
+echo "Python Modules:"
+module load python/2.7.5
+module list
+python --version
+
 #export PYTHONPATH=$PYTHONPATH:/home/mbaityje/miniconda2/pkgs/pytorch-0.2.0-py27h44c09ab_2cu75/lib/python2.7/site-packages/:
 #export PATH=/home/mbaityje/miniconda2/bin:$PATH
 
@@ -23,7 +27,6 @@ if [ $SYSTEM == "PennPuter" ];then
 fi
 
 #--DATASET--
-readonly dataset='cifar10'
 
 #--DIRECTORIES--
 scriptDIR=$PWD/
@@ -37,16 +40,18 @@ logDIR=$myROOT/logs
 prog=corr.py
 
 #--HYPERPARAMETERS--
-MODELS="bruna10 conv1020relu"
-LEARNING_RATES="0.01 0.02 0.05 0.1 0.2 0.5 1.0"
-HIDDEN_SIZES="10 100 1000 10000"
+#readonly dataset='cifar100'; MODELS="conv1020relu alex6464"; HIDDEN_SIZES="0"; LEARNING_RATES="0.001 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5"
+readonly dataset='cifar10'; MODELS="conv1020relu alex6464"; HIDDEN_SIZES="0"; LEARNING_RATES="0.001 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5"
+#readonly dataset='cifar10'; MODELS="bruna10"; HIDDEN_SIZES="10 100 1000 10000"; LEARNING_RATES="0.01 0.02 0.05 0.1 0.2 0.5"
+#readonly dataset='mnist'; MODELS="bruna10"; HIDDEN_SIZES="10 100 1000 10000"; LEARNING_RATES="0.01 0.02 0.05 0.1 0.2 0.5"
+
+BATCH_SIZES="10 100 1000"
 WEIGHT_DECAYS="0" #Positive: L2, Negative: Bruna, Zero: None
-BATCH_SIZES="10 100 1000" #"10 100"
-INIT_DISTROS="uniform"
+INIT_DISTROS="default"
 MOMENTA="0.5"
-SAMPLES="1"
-NTW=8; NT=100; NTBAR=80
-TW0=10; T0=1; TBAR0=5
+SAMPLES="0"
+NTW=50; NT=100; NTBAR=100
+TW0=10; T0=1; TBAR0=1
 
 #Length of simulation
 TOTLENGTH_NORM=`echo 10^6|bc` #This is the relevant time, LR*TOTLENGTH, which we want equal for all LR
@@ -110,8 +115,8 @@ do
 			        #--Launch in interactive (PennPuter) or via queues (kondo)
 				if [ $SYSTEM == "PennPuter" ]
 				then
-	    			    echo "python $exeDIR/$prog --dataset=$dataset --seed=$SEED --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --momentum=$MOMENTUM --t0=$T0 --tw0=$TW0 --tbar0=$TBAR0 --nt=$NT --ntw=$NTW --ntbar=$NTBAR  --distr=$INIT_DISTR"
-				    time (python $exeDIR/$prog --dataset=$dataset --seed=$SEED --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --momentum=$MOMENTUM --t0=$T0 --tw0=$TW0 --tbar0=$TBAR0 --nt=$NT --ntw=$NTW --ntbar=$NTBAR --distr=$INIT_DISTR) 2>&1
+	    			    echo "python $exeDIR/$prog --dataset=$dataset --seed=$SEED --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --momentum=$MOMENTUM --t0=$T0 --tw0=$TW0 --tbar0=$TBAR0 --nt=$NT --ntw=$NTW --ntbar=$NTBAR  --distr=$INIT_DISTR --losstxt=True"
+				    time (python $exeDIR/$prog --dataset=$dataset --seed=$SEED --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --momentum=$MOMENTUM --t0=$T0 --tw0=$TW0 --tbar0=$TBAR0 --nt=$NT --ntw=$NTW --ntbar=$NTBAR --distr=$INIT_DISTR --losstxt=True) 2>&1
 				elif [ $SYSTEM == "kondo" ]
 				then
 				    nombre=${model}m${HS}lr${LR}bs${BS}s${ISAM}${INIT_DISTR}
