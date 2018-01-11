@@ -148,7 +148,10 @@ else:
 
 #Load network
 if args.load == 'nil':
-    model = model(hidden_size=args.hidden_size)
+    if args.model=='bruna10':
+	model = model(hidden_size=args.hidden_size)
+    else:
+	model = model()
     iniPeriod=0
 else:
     model=loadNet(args.load,model)

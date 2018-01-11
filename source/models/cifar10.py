@@ -1,4 +1,5 @@
 from models.generic_models import conv22tanh,conv22relu,loadNet,convAlexrelu,AlexNet,singleHiddenFullyConnected
+import resnet
 
 
 def bruna10(pretrained_path=False, hidden_size=10,**kwargs):
@@ -70,4 +71,19 @@ def conv1020tanh(pretrained_path=False, **kwargs):
     if pretrained_path:
         return loadNet(pretrained_path,model)
     return model
+
+def resnet18(pretrained_path=False, **kwargs):
+    return resnet.resnet18(pretrained_path, num_classes=10,**kwargs)
+
+def resnet34(pretrained_path=False, **kwargs):
+    return resnet.resnet34(pretrained_path, num_classes=10,**kwargs)
+
+def resnet50(pretrained_path=False, **kwargs):
+    return resnet.resnet50(pretrained_path, num_classes=10,**kwargs)
+
+def resnet101(pretrained_path=False, **kwargs):
+    return resnet.resnet101(pretrained_path, num_classes=10,**kwargs)
+
+def resnet152(pretrained_path=False, **kwargs):
+    return resnet.resnet152(pretrained_path, num_classes=10,**kwargs)
 

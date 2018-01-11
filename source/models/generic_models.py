@@ -150,5 +150,3 @@ class singleHiddenFullyConnected(nn.Module):
         return out
 
 
-
-
