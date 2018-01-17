@@ -1,6 +1,17 @@
 #from torchvision.models.resnet import ResNet,BasicBlock
-from models.generic_models import conv22tanh,conv22relu,loadNet,convAlexrelu,AlexNet
+from models.generic_models import conv22tanh,conv22relu,loadNet,convAlexrelu,AlexNet,singleHiddenFullyConnected
 import resnet
+
+def bruna10(pretrained_path=False, hidden_size=10,**kwargs):
+    """Constructs a very simple convNet
+    Args:
+        pretrained_path (bool): If True, returns the pretrained model on the path
+    """
+    model = singleHiddenFullyConnected(layers=[3072,hidden_size,100])
+    if pretrained_path:
+        return loadNet(pretrained_path,model)
+    return model
+
 
 def convTest(pretrained_path=False, **kwargs):
     """Constructs a very simple convNet
