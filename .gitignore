@@ -3,10 +3,12 @@
 *~
 
 #Directories with data (and their links)
+logs/
 output/
 data_cifar10/
 data_cifar100/
 data_mnist/
+output
 data_cifar10
 data_cifar100
 data_mnist
