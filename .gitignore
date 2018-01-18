@@ -1,0 +1,26 @@
+#Extensions that should not be transferred
+*.pyc
+*~
+
+#Directories with data (and their links)
+output/
+data_cifar10/
+data_cifar100/
+data_mnist/
+data_cifar10
+data_cifar100
+data_mnist
+
+#Scripts for data transfer
+makedirs.sh
+rsyncdata.sh
+
+#Other folders that I do not want to upload
+docs1/
+docs2/
+plots/
+
+#Other files that I do not want to upload
+scripts/lanzar_prueba.sh
+source/prova.sh
+
