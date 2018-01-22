@@ -14,7 +14,6 @@ data_cifar100
 data_mnist
 
 #Scripts for data transfer
-makedirs.sh
 rsyncdata.sh
 
 #Other folders that I do not want to upload
