@@ -42,10 +42,11 @@ prog=corr.py
 #--HYPERPARAMETERS--
 #readonly dataset='cifar100'; MODELS="conv1020relu alex6464"; HIDDEN_SIZES="0"; LEARNING_RATES="0.001 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5"
 #readonly dataset='cifar10'; MODELS="conv1020relu alex6464"; HIDDEN_SIZES="0"; LEARNING_RATES="0.001 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5"
+readonly dataset='cifar100'; MODELS="bruna10"; HIDDEN_SIZES="10 100 1000 10000"; LEARNING_RATES="0.01 0.02 0.05 0.1 0.2 0.5"
 #readonly dataset='cifar10'; MODELS="bruna10"; HIDDEN_SIZES="10 100 1000 10000"; LEARNING_RATES="0.01 0.02 0.05 0.1 0.2 0.5"
 #readonly dataset='mnist'; MODELS="bruna10"; HIDDEN_SIZES="10 100 1000 10000"; LEARNING_RATES="0.01 0.02 0.05 0.1 0.2 0.5"
 #readonly dataset='cifar10'; MODELS="resnet18 resnet34"; HIDDEN_SIZES="0"; LEARNING_RATES="0.001 0.005 0.01 0.05 0.1"
-readonly dataset='cifar100'; MODELS="resnet18 resnet34"; HIDDEN_SIZES="0"; LEARNING_RATES="0.001 0.005 0.01 0.05 0.1"
+#readonly dataset='cifar100'; MODELS="resnet18 resnet34"; HIDDEN_SIZES="0"; LEARNING_RATES="0.001 0.005 0.01 0.05 0.1"
 
 
 BATCH_SIZES="10 100 1000"
