@@ -125,8 +125,11 @@ do
 				then
 				    nombre=${model}m${HS}lr${LR}bs${BS}s${ISAM}${INIT_DISTR}
 				    echo "Process name: $nombre"
-				    echo "qsub -N $nombre -q $QUEUE -v dataset=$dataset,SEED=$SEED,spp=$spp,periods=$periods,BS=$BS,HS=$HS,outDIR=$outDIR,save_every=$save_every,LR=$LR,model=$model,WD=$WD,MOMENTUM=$MOMENTUM,startFrom=$startFrom,NT=$NT,NTW=$NTW,NTBAR=$NTBAR,T0=$T0,TW0=$TW0,TBAR0=$TBAR0,INIT_DISTR=$INIT_DISTR -j oe -o $logDIR/$nombre.$$.txt $scriptDIR/corr.qsub"
-				    qsub -N $nombre -q $QUEUE -v dataset=$dataset,SEED=$SEED,spp=$spp,periods=$periods,BS=$BS,HS=$HS,outDIR=$outDIR,save_every=$save_every,LR=$LR,model=$model,WD=$WD,MOMENTUM=$MOMENTUM,startFrom=$startFrom,NT=$NT,NTW=$NTW,NTBAR=$NTBAR,T0=$T0,TW0=$TW0,TBAR0=$TBAR0,INIT_DISTR=$INIT_DISTR -j oe -o $logDIR/$nombre.$$.txt $scriptDIR/corr.qsub
+				    if [ -z "`qstat -f | grep $nombre`" ];
+				    then
+					echo "qsub -N $nombre -q $QUEUE -v dataset=$dataset,SEED=$SEED,spp=$spp,periods=$periods,BS=$BS,HS=$HS,outDIR=$outDIR,save_every=$save_every,LR=$LR,model=$model,WD=$WD,MOMENTUM=$MOMENTUM,startFrom=$startFrom,NT=$NT,NTW=$NTW,NTBAR=$NTBAR,T0=$T0,TW0=$TW0,TBAR0=$TBAR0,INIT_DISTR=$INIT_DISTR -j oe -o $logDIR/$nombre.$$.txt $scriptDIR/corr.qsub"
+					qsub -N $nombre -q $QUEUE -v dataset=$dataset,SEED=$SEED,spp=$spp,periods=$periods,BS=$BS,HS=$HS,outDIR=$outDIR,save_every=$save_every,LR=$LR,model=$model,WD=$WD,MOMENTUM=$MOMENTUM,startFrom=$startFrom,NT=$NT,NTW=$NTW,NTBAR=$NTBAR,T0=$T0,TW0=$TW0,TBAR0=$TBAR0,INIT_DISTR=$INIT_DISTR -j oe -o $logDIR/$nombre.$$.txt $scriptDIR/corr.qsub
+				    fi
 				fi
 			    done    
 			done
