@@ -1,17 +1,31 @@
 # This code is not good, so please don't look at it.
 
+## Upgrades necessari
 
-## Possibili Upgrade
+## Version 1
 
-- Implementare ResNet
+- Gli script per lanciare su kondo dovrebbero controllare che non ci
+  sia un altro script con lo stesso nome.
 
-- Relegare qualche funzione a moduli esterni (tipo i tempi), e
-  accorciare la lunghezza del main
+## Version 2
 
-- Gli script per lanciare su kondo dovrebbero controllare che non ci sia un altro script con lo stesso nome. 
+- Misure gradienti (al momento li misura un programma a parte).
+
+- Misura correlazioni per layer.
+
+- Misurare Loss/Accuracy a tw, in modo da fare solo un ciclo di
+  misure, ora che si misura anche il gradiente.
+
+- tw deve andare fino a tmax, non fino a tmax/2, e per tw>tmax
+  semplicemente si fanno meno t.
+
+- ResNet
+
+- Relegare qualche funzione a moduli esterni (tipo i tempi),
+  accorciare la lunghezza del main, fare qualche classe/nested method
 
 - Calcolare gli istogrammi con pytorch invece che non numpy
 
-- hidden_size puo` modificare parametri anche per le reti convoluzionali
+- tutte le osservabili devono essere scritte su disco "on the run"
 
 
