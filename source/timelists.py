@@ -13,9 +13,9 @@ import numpy as np
 # Input:
 ##############################
 #User input
-total_time=3e8
+total_time=500000
 tw0=1; t0=1; tbar0=1
-ntw=5; nt=100; ntbar=100
+ntw=50; nt=100; ntbar=100
 
 #Derived input
 tbarn=total_time

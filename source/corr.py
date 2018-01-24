@@ -25,6 +25,7 @@ import argparse
 from models.generic_models import loadNet
 import numpy as np #for the generation of the time lists
 from operator import mul
+import collections #probabilmente non necessario
 
 #####################
 # Training settings #
@@ -83,6 +84,8 @@ parser.add_argument('--distr', type=str, default='default',
                     help='distribution of weights. pytorch default (default), uniform, uniform1, uniform01, zero, ones, normal')
 parser.add_argument('--losstxt', type=bool, default=False,
                     help='If True, saves loss and accuracy on a txt file every time it is calculated (default is False).')
+parser.add_argument('--grad', type=bool, default=False,
+                    help='If True, calculates the gradient of the loss (default is False).')
 
 
 ##################
@@ -104,12 +107,22 @@ save_at.add(args.periods)
 if args.data_size != 0:
     torch.save(list(train_loader.dataset),base_path+'.data')
 
-
+#Loss function in txt format
 if True==args.losstxt:
     losstxt_name=base_path+'_loss.txt'
     f = open(losstxt_name, 'w')
     f.write("#1)time 2)train_acc 3)test_acc 4)train_loss 5)test_loss\n")
     f.close()
+
+#Gradient of the loss
+calcGrad=True
+if True==args.grad:
+    gradtxt_name=base_path+'_gradloss.txt'
+    f = open(gradtxt_name, 'w')
+    f.write("#1)time 2)loss 3)var(loss) 4)gradloss 5)var(grad)\n")
+    f.close()
+
+
 
 ##################
 # Checks on args #
@@ -123,11 +136,11 @@ if args.weight_decay>=0:
     weight_decay=args.weight_decay
     bruna_decay=0
 else:
-	if args.model!='bruna10':
-		print("A negative weight decay is only accepted if the model is bruna10.")
-		sys.exit()
-	weight_decay=0
-	bruna_decay=-args.weight_decay
+    if args.model!='bruna10':
+	print("A negative weight decay is only accepted if the model is bruna10.")
+	sys.exit()
+    weight_decay=0
+    bruna_decay=-args.weight_decay
 
 ####################
 # Data and Network #
@@ -373,13 +386,19 @@ def train(period, n_step = 1000, lr=args.lr):
             print("abs_batch_idx:",absolute_batch_idx," batch_idx:",batch_idx,"epoch:",absolute_batch_idx/len(train_loader)," period:",period-1)
             logPerformance(model,period,batch_idx, n_step)
 
-        if absolute_batch_idx in listatw: #Save states w and measure p(w)
+        if absolute_batch_idx in listatw: #Save states w, measure p(w), measure gradient
             itw=np.where(listatw==absolute_batch_idx)[0][0]
             w=getWeights(model)
             w_evol[itw]=w.clone() #We need this for C(tw,t'=t+tw)
             histw=np.histogram(w.numpy(),bins=nbins,normed=False,weights=None)
             histw_evol_x[itw]=torch.from_numpy(np.array(histw[1]))
             histw_evol_y[itw]=torch.from_numpy(np.array(histw[0]))
+            if True==args.grad:
+                ml,vl,mg2,vg = measureLossGradient(train_loader, optimizer)
+                fgrad = open(gradtxt_name, 'a')
+                fgrad.write(str(absolute_batch_idx)+" "+str(ml)+" "+str(vl)+" "+str(mg2)+" "+str(vg)+"\n")
+                fgrad.close()
+
 
         if absolute_batch_idx in listatprime: #Measure correlation functions
             itprime=list(listatprime).index(absolute_batch_idx)
@@ -421,6 +440,60 @@ def test(period,data_loader,print_c=False,label='Test '):
         test_loss, correct, len(data_loader.dataset),
         100. * correct / len(data_loader.dataset)))
     return (test_loss, correct, len(data_loader.dataset))
+
+def measureLossGradient(data_loader, optimizer): 
+    """ 
+    This function measures the loss, its variance, the gradient of the loss, and its variance.
+    It is written so that it will be easy to generalize to per-layer measurements. 
+    """
+    model.eval()
+
+    #Initialize to zero
+    optimizer.zero_grad()
+    meanGrad = collections.OrderedDict([(key, np.zeros(value.size())) for key, value in model.state_dict().items()])
+    meanGrad2 = collections.OrderedDict([(key, 0) for key, value in model.state_dict().items()])
+    varGrad = collections.OrderedDict([(key, 0) for key, value in model.state_dict().items()])
+    meanLoss=0
+    meanLoss2=0
+
+    #Loop over the data
+    for data, target in data_loader:
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data, requires_grad=True), Variable(target)
+        optimizer.zero_grad()
+        output = model(data)
+        loss = loss_function(output, target)
+        meanLoss+=loss.data
+        meanLoss2+=loss.data*loss.data
+        loss.backward()
+
+        state = model.state_dict(keep_vars=True) #keep_vars requires pytorch 0.3 or newer
+        gradient = collections.OrderedDict([(key, value.grad.data.cpu().numpy().copy()) for key, value in state.items()])
+
+        for key in state:
+            meanGrad[key]+=gradient[key]
+            meanGrad2[key] += (gradient[key]*gradient[key]).sum()
+
+    meanLoss/=len(data_loader)
+    meanLoss2/=len(data_loader)
+
+    #Now join different layers
+    totMeanGrad2 = 0  # <grad>^2 of all the layers
+    totVarGrad = 0    # var(grad) of all layers
+    for key in state:
+        meanGrad[key]/=len(data_loader)
+        meanGrad2[key]/=len(data_loader)
+        D1=(meanGrad[key]*meanGrad[key]).sum()
+        varGrad[key]=meanGrad2[key]-D1
+        totMeanGrad2+=D1
+        totVarGrad+=varGrad[key]
+    totMeanGrad2/=len(meanGrad2)
+
+    varLoss=meanLoss2-meanLoss*meanLoss
+    return meanLoss[0],varLoss[0],totMeanGrad2,totVarGrad
+
+
 
 
 #####################

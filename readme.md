@@ -9,6 +9,8 @@
 
 ## Version 2
 
+- bruna10 dovrebbe essere in files esterni.
+
 - Misure gradienti (al momento li misura un programma a parte).
 
 - Misura correlazioni per layer.
