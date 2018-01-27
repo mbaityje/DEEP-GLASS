@@ -7,8 +7,6 @@
 ##PBS -e /home/mbaityje/deep-learning/logs/bruna10.$PBS_JOBID.err
 ##########################################################
 
-module load python
-
 rootDIR=~/deep-learning
 cd $rootDIR
 exeDIR=$rootDIR/source

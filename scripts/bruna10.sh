@@ -2,9 +2,6 @@
 # Script to launch bruna network
 # 
 
-export PYTHONPATH=$PYTHONPATH:/home/mbaityje/miniconda2/pkgs/pytorch-0.2.0-py27h44c09ab_2cu75/lib/python2.7/site-packages/:
-export PATH=/home/mbaityje/miniconda2/bin:$PATH
-
 #--SYSTEM RECOGNITION--
 SYSTEM="kondo"
 #SYSTEM="PennPuter"

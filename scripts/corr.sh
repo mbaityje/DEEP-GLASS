@@ -2,14 +2,6 @@
 # Script to launch bruna network
 # 
 
-echo "Python Modules:"
-module load python/2.7.5
-module list
-python --version
-
-#export PYTHONPATH=$PYTHONPATH:/home/mbaityje/miniconda2/pkgs/pytorch-0.2.0-py27h44c09ab_2cu75/lib/python2.7/site-packages/:
-#export PATH=/home/mbaityje/miniconda2/bin:$PATH
-
 #--SYSTEM RECOGNITION--
 myusername=`whoami`
 SYSTEM="kondo"

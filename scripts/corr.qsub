@@ -7,11 +7,6 @@
 ##PBS -e /home/mbaityje/deep-learning/logs/bruna10.$PBS_JOBID.err
 ##########################################################
 
-echo "Python Modules:"
-module load python/2.7.5
-module list
-python --version
-
 rootDIR=~/deep-learning
 cd $rootDIR
 exeDIR=$rootDIR/source

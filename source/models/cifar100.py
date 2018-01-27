@@ -1,6 +1,6 @@
 #from torchvision.models.resnet import ResNet,BasicBlock
 from models.generic_models import conv22tanh,conv22relu,loadNet,convAlexrelu,AlexNet,singleHiddenFullyConnected
-import resnet
+from models import resnet
 
 def bruna10(pretrained_path=False, hidden_size=10,**kwargs):
     """Constructs a very simple convNet

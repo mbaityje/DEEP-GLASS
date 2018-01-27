@@ -136,11 +136,11 @@ if args.weight_decay>=0:
     weight_decay=args.weight_decay
     bruna_decay=0
 else:
-    if args.model!='bruna10':
-	print("A negative weight decay is only accepted if the model is bruna10.")
-	sys.exit()
     weight_decay=0
     bruna_decay=-args.weight_decay
+    if args.model != 'bruna10':
+        print("A negative weight decay is only accepted if the model is bruna10.")
+        sys.exit()
 
 ####################
 # Data and Network #
@@ -162,9 +162,9 @@ else:
 #Load network
 if args.load == 'nil':
     if args.model=='bruna10':
-	model = model(hidden_size=args.hidden_size)
+        model = model(hidden_size=args.hidden_size)
     else:
-	model = model()
+        model = model()
     iniPeriod=0
 else:
     model=loadNet(args.load,model)
@@ -530,7 +530,6 @@ histfile.close()
 #save C(tw,t')
 f1=open(base_path+'_C.txt', 'w+')
 f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2\n')
-f1.write('#Time is measured in batches\n')
 for itprime in range(len(listatprime)):
     for icomb in range(howmany_tprime[itprime]):
         [itw,it]=which_itwit[itprime][icomb]
