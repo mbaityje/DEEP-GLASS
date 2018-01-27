@@ -2,16 +2,14 @@
 
 ## Upgrades necessari
 
-## Version 1
-
-- Gli script per lanciare su kondo dovrebbero controllare che non ci
-  sia un altro script con lo stesso nome.
 
 ## Version 2
 
-- bruna10 dovrebbe essere in files esterni.
+- tutte le osservabili devono essere scritte su disco "on the run"
 
-- Misure gradienti (al momento li misura un programma a parte).
+- Misure gradienti devono essere "appese" a quelle della C(tw,tw+t)
+
+- bruna10 dovrebbe essere in files esterni.
 
 - Misura correlazioni per layer.
 
@@ -28,6 +26,5 @@
 
 - Calcolare gli istogrammi con pytorch invece che non numpy
 
-- tutte le osservabili devono essere scritte su disco "on the run"
 
 
