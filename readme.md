@@ -5,26 +5,26 @@
 
 ## Version 2
 
-- tutte le osservabili devono essere scritte su disco "on the run"
+- tutte le osservabili devono essere scritte su disco "on the run" *[in progress]*
 
-- Misure gradienti devono essere "appese" a quelle della C(tw,tw+t)
+- Misure gradienti devono essere "appese" a quelle della C(tw,tw+t) *[in progress]*s
+
+- fare un dizionario con tutte le osservabili a tempo tw.
 
 - bruna10 dovrebbe essere in files esterni.
 
-- Misura correlazioni per layer.
+- Misura correlazioni *per layer*.
 
 - Misurare Loss/Accuracy a tw, in modo da fare solo un ciclo di
   misure, ora che si misura anche il gradiente.
 
-- tw deve andare fino a tmax, non fino a tmax/2, e per tw>tmax
-  semplicemente si fanno meno t.
+- **tw** deve andare fino a tmax, non fino a tmax/2, e per tw>tmax semplicemente si fanno meno t.
 
-- ResNet
+- **ResNet**
 
-- Relegare qualche funzione a moduli esterni (tipo i tempi),
-  accorciare la lunghezza del main, fare qualche classe/nested method
+- Relegare qualche funzione a **moduli esterni** (tipo i tempi), accorciare la lunghezza del main, fare qualche classe/nested method
 
-- Calcolare gli istogrammi con pytorch invece che non numpy
+- Calcolare gli **istogrammi** con pytorch invece che non numpy
 
-
+- Con nuova versione di pytorch: ```UserWarning: Implicit dimension choice for log_softmax has been deprecated. Change the call to include dim=X as an argument. return F.log_softmax(x)```
 
