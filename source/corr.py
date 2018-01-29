@@ -84,8 +84,8 @@ parser.add_argument('--distr', type=str, default='default',
                     help='distribution of weights. pytorch default (default), uniform, uniform1, uniform01, zero, ones, normal')
 parser.add_argument('--losstxt', type=bool, default=False,
                     help='If True, saves loss and accuracy on a txt file every time it is calculated (default is False).')
-parser.add_argument('--grad', type=bool, default=False,
-                    help='If True, calculates the gradient of the loss (default is False).')
+parser.add_argument('--grad', type=int, default=0, choices=[0,1,2],
+                    help='0: do not calculate the gradient of the loss (default). 1: Calculate the gradient of the loss at every tw. 2: Calculate it at every tw+t.')
 
 
 ##################
@@ -115,14 +115,11 @@ if True==args.losstxt:
     f.close()
 
 #Gradient of the loss
-calcGrad=True
-if True==args.grad:
+if 0<args.grad:
     gradtxt_name=base_path+'_gradloss.txt'
     f = open(gradtxt_name, 'w')
-    f.write("#1)time 2)loss 3)var(loss) 4)gradloss 5)var(grad)\n")
+    f.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2 8)loss 9)var(loss) 10)gradloss 11)var(grad)\n')
     f.close()
-
-
 
 ##################
 # Checks on args #
@@ -324,6 +321,10 @@ histw_evol_y=torch.Tensor(args.ntw+1,nbins)
 #1-time quantities
 #Weights at time tw
 w_evol=torch.Tensor(args.ntw+1,num_params)
+losstw=torch.Tensor(args.ntw+1)
+varlosstw=torch.Tensor(args.ntw+1)
+grad2tw=torch.Tensor(args.ntw+1)
+vargradtw=torch.Tensor(args.ntw+1)
 #2-time quantities
 #Correlation function
 corrw=torch.Tensor(args.ntw+1,args.nt+1)      #Correlation: \sum [w(t)-w(t')]^2
@@ -393,16 +394,25 @@ def train(period, n_step = 1000, lr=args.lr):
             histw=np.histogram(w.numpy(),bins=nbins,normed=False,weights=None)
             histw_evol_x[itw]=torch.from_numpy(np.array(histw[1]))
             histw_evol_y[itw]=torch.from_numpy(np.array(histw[0]))
-            if True==args.grad:
-                ml,vl,mg2,vg = measureLossGradient(train_loader, optimizer)
-                fgrad = open(gradtxt_name, 'a')
-                fgrad.write(str(absolute_batch_idx)+" "+str(ml)+" "+str(vl)+" "+str(mg2)+" "+str(vg)+"\n")
-                fgrad.close()
+            if 0<args.grad:
+                losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw] = measureLossGradient(train_loader, optimizer)
 
 
         if absolute_batch_idx in listatprime: #Measure correlation functions
             itprime=list(listatprime).index(absolute_batch_idx)
             w=getWeights(model)
+            if args.grad>0:
+                if absolute_batch_idx in listatw: #gradient was already measured at this time
+                    itw=np.where(listatw==absolute_batch_idx)[0][0]
+                    ml,vl,mg2,vg = losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw]
+                else:
+                    if args.grad==1: #We only take the value at tw
+                        ml,vl,mg2,vg = losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw]
+                    elif args.grad==2:
+                        ml,vl,mg2,vg = measureLossGradient(train_loader, optimizer)
+                    else:
+                        raise SystemExit("args.grad=",args.grad," is not allowed. Should be 0,1 or 2. Abort.")
+            
             for icomb in range(howmany_tprime[itprime]):
                 [itw,it]=which_itwit[itprime][icomb]
                 assert(listatw[itw]+listat[it]==absolute_batch_idx)
@@ -412,6 +422,11 @@ def train(period, n_step = 1000, lr=args.lr):
                 dorrw[itw][it]=fourth_corrw
                 assert(square_corrw>=0)
                 assert(fourth_corrw>=0)
+                fgrad = open(gradtxt_name, 'a')
+                fgrad.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+
+                	str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ str(dorrw.numpy()[itw][it]/(corrw.numpy()[itw][it]*corrw.numpy()[itw][it])) +' '+\
+                	str(ml)+' '+str(vl)+' '+str(mg2)+' '+str(vg)+"\n")
+                fgrad.close()
 
         optimizer.step()
         if args.print_interval and batch_idx % args.print_interval == 0:
