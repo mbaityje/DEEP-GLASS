@@ -17,6 +17,7 @@ data_mnist
 rsyncdata.sh
 
 #Other folders that I do not want to upload
+__pycache__
 docs1/
 docs2/
 plots/
