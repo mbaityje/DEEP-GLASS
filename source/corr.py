@@ -27,6 +27,9 @@ import numpy as np #for the generation of the time lists
 from operator import mul
 import collections #probabilmente non necessario
 
+
+print("Pytorch version is ",torch.__version__)
+
 #####################
 # Training settings #
 #####################
