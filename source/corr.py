@@ -99,7 +99,7 @@ print(args)
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 if args.cuda:
-    torch.cuda.manual_seed(args.seed)
+	torch.cuda.manual_seed(args.seed)
 
 ######################
 # Output information #
@@ -112,17 +112,17 @@ if args.data_size != 0:
 
 #Loss function in txt format
 if True==args.losstxt:
-    losstxt_name=base_path+'_loss.txt'
-    f = open(losstxt_name, 'w')
-    f.write("#1)time 2)train_acc 3)test_acc 4)train_loss 5)test_loss\n")
-    f.close()
+	losstxt_name=base_path+'_loss.txt'
+	f = open(losstxt_name, 'w')
+	f.write("#1)time 2)train_acc 3)test_acc 4)train_loss 5)test_loss\n")
+	f.close()
 
 #Gradient of the loss
 if 0<args.grad:
-    gradtxt_name=base_path+'_gradloss.txt'
-    f = open(gradtxt_name, 'w')
-    f.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2 8)loss 9)var(loss) 10)gradloss 11)var(grad)\n')
-    f.close()
+	gradtxt_name=base_path+'_gradloss.txt'
+	f = open(gradtxt_name, 'w')
+	f.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2 8)loss 9)var(loss) 10)gradloss 11)var(grad)\n')
+	f.close()
 
 ##################
 # Checks on args #
@@ -133,14 +133,14 @@ if args.model=='bruna10':
 
 #Regularization parameters
 if args.weight_decay>=0:
-    weight_decay=args.weight_decay
-    bruna_decay=0
+	weight_decay=args.weight_decay
+	bruna_decay=0
 else:
-    weight_decay=0
-    bruna_decay=-args.weight_decay
-    if args.model != 'bruna10':
-        print("A negative weight decay is only accepted if the model is bruna10.")
-        sys.exit()
+	weight_decay=0
+	bruna_decay=-args.weight_decay
+	if args.model != 'bruna10':
+		print("A negative weight decay is only accepted if the model is bruna10.")
+		sys.exit()
 
 ####################
 # Data and Network #
@@ -161,15 +161,15 @@ else:
 
 #Load network
 if args.load == 'nil':
-    if args.model=='bruna10':
-        model = model(hidden_size=args.hidden_size)
-    else:
-        model = model()
-    iniPeriod=0
+	if args.model=='bruna10':
+		model = model(hidden_size=args.hidden_size)
+	else:
+		model = model()
+	iniPeriod=0
 else:
-    model=loadNet(args.load,model)
-    from re import search
-    iniPeriod=1+int(search('_',args.model,'_(.+?).pyT',args.load).group(1))
+	model=loadNet(args.load,model)
+	from re import search
+	iniPeriod=1+int(search('_',args.model,'_(.+?).pyT',args.load).group(1))
 
 
 #################################
@@ -236,11 +236,11 @@ def getWeights(mymodel):
 ##########################
 #This is the same as in Bruna's paper
 def L1_regularizationBruna(mod):
-    return torch.norm(mod.fc2.weight,1) + torch.norm(mod.fc2.bias,1)
+	return torch.norm(mod.fc2.weight,1) + torch.norm(mod.fc2.bias,1)
 
 #In Bruna's paper, they put a bound on the L2 norm of the single row - this is different.
 def L2_regularizationBruna(mod):
-    return torch.norm(mod.fc1.weight,2)+torch.norm(mod.fc1.bias,2)
+	return torch.norm(mod.fc1.weight,2)+torch.norm(mod.fc1.bias,2)
 
 #################
 # Loss Function #
@@ -248,15 +248,15 @@ def L2_regularizationBruna(mod):
 
 # A Mean Square Error loss to mimic Bruna's paper
 def bruna_loss10(output, target):
-    num_classes=len(output[0]) #output is a B x num_classes matrix. len(output)=B, len(output[0])=num_classes
-    this_batch_size=target.numel() #the last batch may be shorter
-    temp=output[0].pow(2).sum()+1-2*output[0][target[0].data[0]]    
-    for i in range(1,this_batch_size):
-        temp+=output[i].pow(2).sum()+1-2*output[i][target[i].data[0]]
-    myloss=temp/(this_batch_size*num_classes)
-    if bruna_decay>0:#This is because bruna_decay is often chosen to be zero
-    	myloss+=bruna_decay*(L1_regularizationBruna(model)+L2_regularizationBruna(model))
-    return myloss
+	num_classes=len(output[0]) #output is a B x num_classes matrix. len(output)=B, len(output[0])=num_classes
+	this_batch_size=target.numel() #the last batch may be shorter
+	temp=output[0].pow(2).sum()+1-2*output[0][target[0].data[0]]    
+	for i in range(1,this_batch_size):
+		temp+=output[i].pow(2).sum()+1-2*output[i][target[i].data[0]]
+	myloss=temp/(this_batch_size*num_classes)
+	if bruna_decay>0:#This is because bruna_decay is often chosen to be zero
+		myloss+=bruna_decay*(L1_regularizationBruna(model)+L2_regularizationBruna(model))
+	return myloss
 
 def loss_function(output, target):
 	if args.model=='bruna10':
@@ -271,18 +271,18 @@ def loss_function(output, target):
 # Generation of the time lists #
 ################################
 def ListaLogaritmica(x0,xn,n,ints=False,addzero=False):
-    assert(xn>x0)
-    assert(x0>0)
-    n=np.int64(n)
-    y0=np.log(x0)
-    yn=np.log(xn)
-    delta=np.float64(yn-y0)/(n-1)
-    listax=np.exp([y0+i*delta for i in range(n)])
-    if ints:
-        listax=np.unique(np.round(listax,0).astype(int))
-    if addzero:
-        listax=np.insert(listax,0,0)
-    return listax
+	assert(xn>x0)
+	assert(x0>0)
+	n=np.int64(n)
+	y0=np.log(x0)
+	yn=np.log(xn)
+	delta=np.float64(yn-y0)/(n-1)
+	listax=np.exp([y0+i*delta for i in range(n)])
+	if ints:
+		listax=np.unique(np.round(listax,0).astype(int))
+	if addzero:
+		listax=np.insert(listax,0,0)
+	return listax
 
 #Parameters that are not argparsed
 total_time=np.int64(args.steps_per_period*args.periods) #Total number of batches, which is our time unit
@@ -297,17 +297,17 @@ listatbar=set(ListaLogaritmica(args.tbar0,tbarn,args.ntbar,ints=True,addzero=Tru
 listatprime=[]; which_itwit=[]; howmany_tprime=[]
 itprime=0
 for itw in range(len(listatw)):
-    for it in range(len(listat)):
-        value=listat[it]+listatw[itw]
-        if value in listatprime:
-            itprime_old=listatprime.index(value)
-            which_itwit[itprime_old].append([itw,it])
-            howmany_tprime[itprime_old]+=1
-        else:
-            listatprime.append(value)
-            which_itwit.append([[itw,it]])
-            howmany_tprime.append(1)
-            itprime+=1
+	for it in range(len(listat)):
+		value=listat[it]+listatw[itw]
+		if value in listatprime:
+			itprime_old=listatprime.index(value)
+			which_itwit[itprime_old].append([itw,it])
+			howmany_tprime[itprime_old]+=1
+		else:
+			listatprime.append(value)
+			which_itwit.append([[itw,it]])
+			howmany_tprime.append(1)
+			itprime+=1
 listatprime=listatprime
 print("listatw = ",listatw)
 print("listat = ",listat)
@@ -345,34 +345,34 @@ circ_train_loader = cycle_loader(train_loader)
 test_loader = getDataset(args.dataset,train=False,b_size=args.test_batch_size,**kwargs)
 
 if args.cuda:
-    model.cuda()
+	model.cuda()
 
 args.lr = float(args.lr)
 
 def updateOptimizer(old,fun,model,period,batch_idx,*f_args):
-    new_lr = fun(model,*f_args)
-    if new_lr and 0<new_lr<1:
-        loss_hist['lr'].append((period,batch_idx,new_lr))
-        old = optim.SGD(model.parameters(), lr=new_lr, momentum=args.momentum, weight_decay=weight_decay)
-    return old
+	new_lr = fun(model,*f_args)
+	if new_lr and 0<new_lr<1:
+		loss_hist['lr'].append((period,batch_idx,new_lr))
+		old = optim.SGD(model.parameters(), lr=new_lr, momentum=args.momentum, weight_decay=weight_decay)
+	return old
 
 loss_hist = {'train':[],'test':[],'lr':[]} ##losses before steps
 def logPerformance(model, period, batch_idx, n_step):
-    loss_tuple = test(period,test_loader,print_c=True)
-    loss_hist['test'].append((period,batch_idx,loss_tuple))
-    test_loss=loss_tuple[0]
-    test_acc=float(loss_tuple[1])/loss_tuple[2]
-    loss_tuple = test(period,train_loader,print_c=True,label='Train')
-    loss_hist['train'].append((period,batch_idx,loss_tuple))
-    if args.losstxt == True:
-        absolute_batch_idx=batch_idx+(period-1)*n_step
-        train_acc=float(loss_tuple[1])/loss_tuple[2]
-        train_loss=loss_tuple[0]
-        f = open(losstxt_name, 'a')
-        f.write(str(absolute_batch_idx)+" "+str(train_acc)+" "+str(test_acc)+" "+str(train_loss)+" "+str(test_loss)+"\n")
-        f.close()
+	loss_tuple = test(period,test_loader,print_c=True)
+	loss_hist['test'].append((period,batch_idx,loss_tuple))
+	test_loss=loss_tuple[0]
+	test_acc=float(loss_tuple[1])/loss_tuple[2]
+	loss_tuple = test(period,train_loader,print_c=True,label='Train')
+	loss_hist['train'].append((period,batch_idx,loss_tuple))
+	if args.losstxt == True:
+		absolute_batch_idx=batch_idx+(period-1)*n_step
+		train_acc=float(loss_tuple[1])/loss_tuple[2]
+		train_loss=loss_tuple[0]
+		f = open(losstxt_name, 'a')
+		f.write(str(absolute_batch_idx)+" "+str(train_acc)+" "+str(test_acc)+" "+str(train_loss)+" "+str(test_loss)+"\n")
+		f.close()
 
-    
+
 def train(period, n_step = 1000, lr=args.lr):
     model.train()
     optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
@@ -440,76 +440,78 @@ def train(period, n_step = 1000, lr=args.lr):
             break
 
 def test(period,data_loader,print_c=False,label='Test '):
-    model.eval()
-    test_loss = 0
-    correct = 0
-    for data, target in data_loader:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
-        output = model(data)
-        test_loss += loss_function(output, target)
-        pred = output.data.max(1)[1] # get the index of the max log-probability
-        correct += pred.eq(target.data).cpu().sum()
+	model.eval()
+	test_loss = 0
+	correct = 0
+	for data, target in data_loader:
+		if args.cuda:
+			data, target = data.cuda(), target.cuda()
+		data, target = Variable(data, volatile=True), Variable(target)
+		output = model(data)
+		test_loss += loss_function(output, target)
+		pred = output.data.max(1)[1] # get the index of the max log-probability
+		correct += pred.eq(target.data).cpu().sum()
 
-    test_loss = test_loss.data[0]
-    test_loss /= len(data_loader) # loss function already averages over batch size
-    if print_c: print('{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(label,
-        test_loss, correct, len(data_loader.dataset),
-        100. * correct / len(data_loader.dataset)))
-    return (test_loss, correct, len(data_loader.dataset))
+	test_loss = test_loss.data[0]
+	test_loss /= len(data_loader) # loss function already averages over batch size
+	if print_c: print('{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(label,
+		test_loss, correct, len(data_loader.dataset),
+		100. * correct / len(data_loader.dataset)))
+	return (test_loss, correct, len(data_loader.dataset))
 
 def measureLossGradient(data_loader, optimizer): 
-    """ 
+	""" 
     This function measures the loss, its variance, the gradient of the loss, and its variance.
     It is written so that it will be easy to generalize to per-layer measurements. 
     """
-    model.eval()
+	model.eval()
 
-    #Initialize to zero
-    optimizer.zero_grad()
-    meanGrad = collections.OrderedDict([(key, np.zeros(value.size())) for key, value in model.state_dict().items()])
-    meanGrad2 = collections.OrderedDict([(key, 0) for key, value in model.state_dict().items()])
-    varGrad = collections.OrderedDict([(key, 0) for key, value in model.state_dict().items()])
-    meanLoss=0
-    meanLoss2=0
+	#Initialize to zero
+	optimizer.zero_grad()
+	meanGrad = collections.OrderedDict([(key, np.zeros(value.size())) for key, value in model.state_dict().items()])
+	meanGrad2 = collections.OrderedDict([(key, 0) for key, value in model.state_dict().items()])
+	varGrad = collections.OrderedDict([(key, 0) for key, value in model.state_dict().items()])
+	meanLoss=0
+	meanLoss2=0
 
-    #Loop over the data
-    for data, target in data_loader:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, requires_grad=True), Variable(target)
-        optimizer.zero_grad()
-        output = model(data)
-        loss = loss_function(output, target)
-        meanLoss+=loss.data
-        meanLoss2+=loss.data*loss.data
-        loss.backward()
+	#Loop over the data
+	for data, target in data_loader:
+		if args.cuda:
+			data, target = data.cuda(), target.cuda()
+		data, target = Variable(data, requires_grad=True), Variable(target)
+		optimizer.zero_grad()
+		output = model(data)
+		loss = loss_function(output, target)
+		meanLoss+=loss.data
+		meanLoss2+=loss.data*loss.data
+		loss.backward()
 
-        state = model.state_dict(keep_vars=True) #keep_vars requires pytorch 0.3 or newer
-        gradient = collections.OrderedDict([(key, value.grad.data.cpu().numpy().copy()) for key, value in state.items()])
+		state = model.state_dict(keep_vars=True) #keep_vars requires pytorch 0.3 or newer
+		gradient = collections.OrderedDict([(key, value.grad.data.cpu().numpy().copy() if ('weight' in key or 'bias' in key) else np.zeros(value.size())	)  for key, value in state.items()])
 
-        for key in state:
-            meanGrad[key]+=gradient[key]
-            meanGrad2[key] += (gradient[key]*gradient[key]).sum()
+		for key in state:
+			if ('weight' in key or 'bias' in key): #Exclude keys that don't have grad, such as running
+				meanGrad[key]+=gradient[key]
+				meanGrad2[key] += (gradient[key]*gradient[key]).sum()
 
-    meanLoss/=len(data_loader)
-    meanLoss2/=len(data_loader)
+	meanLoss/=len(data_loader)
+	meanLoss2/=len(data_loader)
 
-    #Now join different layers
-    totMeanGrad2 = 0  # <grad>^2 of all the layers
-    totVarGrad = 0    # var(grad) of all layers
-    for key in state:
-        meanGrad[key]/=len(data_loader)
-        meanGrad2[key]/=len(data_loader)
-        D1=(meanGrad[key]*meanGrad[key]).sum()
-        varGrad[key]=meanGrad2[key]-D1
-        totMeanGrad2+=D1
-        totVarGrad+=varGrad[key]
-    totMeanGrad2/=len(meanGrad2)
+	#Now join different layers
+	totMeanGrad2 = 0  # <grad>^2 of all the layers
+	totVarGrad = 0    # var(grad) of all layers
+	for key in state:
+		if ('weight' in key or 'bias' in key):
+			meanGrad[key]/=len(data_loader)
+			meanGrad2[key]/=len(data_loader)
+			D1=(meanGrad[key]*meanGrad[key]).sum()
+			varGrad[key]=meanGrad2[key]-D1
+			totMeanGrad2+=D1
+			totVarGrad+=varGrad[key]
+	totMeanGrad2/=len(meanGrad2)
 
-    varLoss=meanLoss2-meanLoss*meanLoss
-    return meanLoss[0],varLoss[0],totMeanGrad2,totVarGrad
+	varLoss=meanLoss2-meanLoss*meanLoss
+	return meanLoss[0],varLoss[0],totMeanGrad2,totVarGrad
 
 
 
@@ -518,13 +520,13 @@ def measureLossGradient(data_loader, optimizer):
 # Train the network #
 #####################
 for period in range(iniPeriod, args.periods + 1):
-    if period != 0: #So that initial state is saved
-        train(period,n_step=args.steps_per_period)
-    if period in save_at:
-        out = model.state_dict()
-        for k,v in out.items():
-            out[k]=v.cpu()
-        torch.save(out,base_path+'_%05d.pyT'%period)
+	if period != 0: #So that initial state is saved
+		train(period,n_step=args.steps_per_period)
+	if period in save_at:
+		out = model.state_dict()
+		for k,v in out.items():
+			out[k]=v.cpu()
+		torch.save(out,base_path+'_%05d.pyT'%period)
 torch.save(args,base_path+'.args')
 torch.save(loss_hist,base_path+"_{0}-{1}.hist".format("%05d"%iniPeriod,"%05d"%period))
 
@@ -535,13 +537,13 @@ torch.save(loss_hist,base_path+"_{0}-{1}.hist".format("%05d"%iniPeriod,"%05d"%pe
 #Save P(w)
 histfile=file(base_path+'_histw.txt','a')
 for itw in range(len(listatw)):
-    delta=histw_evol_x[itw][1]-histw_evol_x[itw][0]
-    xcenters=histw_evol_x[itw][0:nbins].numpy()+0.5*delta
-    ycenters=histw_evol_y[itw].numpy()
-    normalized_ycenters=ycenters/(num_params*delta)
-    # plt.plot(xcenters, normalized_ycenters, linewidth='3.0', label='t='+str(listatw[itw]))
-    header='1)itw 2)tw 3)w 4)h(w) 5)p(w)' if itw==0 else ''
-    np.savetxt(histfile, np.stack(([itw for i in range(len(xcenters))],[listatw[itw] for i in range(len(xcenters))],xcenters,ycenters,normalized_ycenters),axis=1), fmt='%.14g', delimiter=' ', newline='\n', header=header, footer='', comments='# ')
+	delta=histw_evol_x[itw][1]-histw_evol_x[itw][0]
+	xcenters=histw_evol_x[itw][0:nbins].numpy()+0.5*delta
+	ycenters=histw_evol_y[itw].numpy()
+	normalized_ycenters=ycenters/(num_params*delta)
+	# plt.plot(xcenters, normalized_ycenters, linewidth='3.0', label='t='+str(listatw[itw]))
+	header='1)itw 2)tw 3)w 4)h(w) 5)p(w)' if itw==0 else ''
+	np.savetxt(histfile, np.stack(([itw for i in range(len(xcenters))],[listatw[itw] for i in range(len(xcenters))],xcenters,ycenters,normalized_ycenters),axis=1), fmt='%.14g', delimiter=' ', newline='\n', header=header, footer='', comments='# ')
 # plt.legend(loc='lower center')
 # plt.show()
 histfile.close()
@@ -549,8 +551,8 @@ histfile.close()
 f1=open(base_path+'_C.txt', 'w+')
 f1.write('#1)itw 2)it 3)tw 4)t 5)C(tw,tw+t) 6)D(tw,tw+t) 7)Y=D/C^2\n')
 for itprime in range(len(listatprime)):
-    for icomb in range(howmany_tprime[itprime]):
-        [itw,it]=which_itwit[itprime][icomb]
-        f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ str(dorrw.numpy()[itw][it]/(corrw.numpy()[itw][it]*corrw.numpy()[itw][it])) +'\n')
+	for icomb in range(howmany_tprime[itprime]):
+		[itw,it]=which_itwit[itprime][icomb]
+		f1.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ str(dorrw.numpy()[itw][it]/(corrw.numpy()[itw][it]*corrw.numpy()[itw][it])) +'\n')
 f1.close()
 
