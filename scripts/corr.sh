@@ -115,7 +115,7 @@ do
 				    time (python $exeDIR/$prog --dataset=$dataset --seed=$SEED --steps_per_period=$spp --periods=$periods --batch-size=$BS --test-batch-size=$BS --hidden_size=$HS --out=$outDIR --save-every=$save_every --lr=$LR --model=$model --weight_decay=$WD --load=$startFrom --momentum=$MOMENTUM --t0=$T0 --tw0=$TW0 --tbar0=$TBAR0 --nt=$NT --ntw=$NTW --ntbar=$NTBAR --distr=$INIT_DISTR --losstxt=True) 2>&1
 				elif [ $SYSTEM == "kondo" ]
 				then
-				    nombre=${model}m${HS}lr${LR}bs${BS}s${ISAM}${INIT_DISTR}
+				    nombre=${model}${dataset}m${HS}lr${LR}bs${BS}s${ISAM}${INIT_DISTR}
 				    echo "Process name: $nombre"
 				    if [ -z "`qstat -f | grep $nombre`" ];
 				    then
