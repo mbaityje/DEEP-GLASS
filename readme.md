@@ -5,6 +5,8 @@
 
 ## Version 2
 
+- correggere numero totale di steps: non deve dipendere da B.
+
 - tutte le osservabili devono essere scritte su disco "on the run" *[in progress]*
 
 - Misure gradienti devono essere "appese" a quelle della C(tw,tw+t) *[in progress]*s
