@@ -10,6 +10,7 @@ from torchvision import datasets, transforms
 norm_dic = {   'cifar100':([0.49137, 0.48235, 0.44667],[0.24706, 0.24353, 0.26157]),
                'mnist': ([0.1307], [0.3081]),
                'cifar10':([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])}
+
 def getDataset(dataset,sample_size=0,train=True,b_size=64,shuff=True,**kwargs):
     if sample_size> 0:
         org_batch_size = b_size

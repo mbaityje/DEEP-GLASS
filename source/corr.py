@@ -23,7 +23,7 @@ from torch.autograd import Variable
 import sys
 import argparse
 from models.generic_models import loadNet
-import numpy as np #for the generation of the time lists
+import numpy as np #for the generation of the time lists and subdataset
 from operator import mul
 import collections #probabilmente non necessario
 
@@ -62,7 +62,7 @@ parser.add_argument('--model', type=str, default='bruna10',
 parser.add_argument('--out', type=str, default='./pretrained/',
                     help='Path to be saved (default: ./pretrained/)')
 parser.add_argument('--data-size', type=int, default=0,
-                    help='Default -1: original dataset size, otherwise dataset is downsampled')
+                    help='Default 0: original dataset size, otherwise dataset is downsampled')
 parser.add_argument('--save-every', type=int, default=10,
                     help='1: means saved at every period, 3:means saved every three period. No matter what happens it is saved at the end again.')
 #parser.add_argument('--test-freq', type=int, default=0,
@@ -77,12 +77,12 @@ parser.add_argument('--tw0', type=int, default=1, metavar='tw0',
                     help='initial tw time for C(tw,tw+t) (default: 1)')
 parser.add_argument('--tbar0', type=int, default=1, metavar='tbar0',
                     help='initial t time for Loss(tbar) (default: 1)')
-parser.add_argument('--nt', type=int, default=10, metavar='t0',
+parser.add_argument('--nt', type=int, default=10, metavar='nt',
                     help='number of times t (default: 10)')
-parser.add_argument('--ntw', type=int, default=4, metavar='tw0',
+parser.add_argument('--ntw', type=int, default=4, metavar='ntw',
                     help='number of times tw (default: 4)')
-parser.add_argument('--ntbar', type=int, default=10, metavar='tbar0',
-                    help='number of times tbar (default: 10)')
+parser.add_argument('--ntbar', type=int, default=10, metavar='ntbar',
+                    help='number of times tbar (default: 10). If ntbar==0, the loss is never computed.')
 parser.add_argument('--distr', type=str, default='default',
                     help='distribution of weights. pytorch default (default), uniform, uniform1, uniform01, zero, ones, normal')
 parser.add_argument('--losstxt', type=bool, default=False,
@@ -219,7 +219,7 @@ def weightsInit(mymodel, distr='uniform'):
 				print("Unrecognised weight distribution")
 				sys.exit()
 if 'default' != args.distr:
-    weightsInit(model, distr=args.distr)
+	weightsInit(model, distr=args.distr)
 
 # Function that returns a flattened list of all the weights
 def getWeights(mymodel):
@@ -292,7 +292,7 @@ twn=np.int64(0.5*total_time);
 
 listatw=ListaLogaritmica(args.tw0,twn,args.ntw,ints=True,addzero=True)
 listat=ListaLogaritmica(args.t0,tn,args.nt,ints=True,addzero=True)
-listatbar=set(ListaLogaritmica(args.tbar0,tbarn,args.ntbar,ints=True,addzero=True))
+listatbar=set(ListaLogaritmica(args.tbar0,tbarn,args.ntbar,ints=True,addzero=True)) if args.ntbar>0 else []
 #The list of the tprimes is a little harder
 listatprime=[]; which_itwit=[]; howmany_tprime=[]
 itprime=0
@@ -344,6 +344,7 @@ train_loader = getDataset(args.dataset,sample_size=args.data_size,b_size=args.ba
 circ_train_loader = cycle_loader(train_loader)
 test_loader = getDataset(args.dataset,train=False,b_size=args.test_batch_size,**kwargs)
 
+
 if args.cuda:
 	model.cuda()
 
@@ -374,70 +375,64 @@ def logPerformance(model, period, batch_idx, n_step):
 
 
 def train(period, n_step = 1000, lr=args.lr):
-    model.train()
-    optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
-    for batch_idx, (data, target) in enumerate(circ_train_loader):
-        absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-        optimizer.zero_grad()
-        output = model(data)
-        loss = loss_function(output, target)
-        loss.backward()
+	model.train()
+	optimizer=optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=weight_decay)
+	for batch_idx, (data, target) in enumerate(circ_train_loader):
+		absolute_batch_idx=batch_idx+(period-1)*n_step #The -1 is because periods start from 1
+		if args.cuda:
+			data, target = data.cuda(), target.cuda()
+		data, target = Variable(data), Variable(target)
+		optimizer.zero_grad()
+		output = model(data)
+		loss = loss_function(output, target)
+		loss.backward()
 
-        if absolute_batch_idx in listatbar: #Loss function and accuracy
-            print("abs_batch_idx:",absolute_batch_idx," batch_idx:",batch_idx,"epoch:",absolute_batch_idx/len(train_loader)," period:",period-1)
-            logPerformance(model,period,batch_idx, n_step)
+		if absolute_batch_idx in listatbar: #Loss function and accuracy
+			print("abs_batch_idx:",absolute_batch_idx," batch_idx:",batch_idx,"epoch:",absolute_batch_idx/len(train_loader)," period:",period-1)
+			logPerformance(model,period,batch_idx, n_step)
 
-        if absolute_batch_idx in listatw: #Save states w, measure p(w), measure gradient
-            itw=np.where(listatw==absolute_batch_idx)[0][0]
-            w=getWeights(model)
-            w_evol[itw]=w.clone() #We need this for C(tw,t'=t+tw)
-            histw=np.histogram(w.numpy(),bins=nbins,normed=False,weights=None)
-            histw_evol_x[itw]=torch.from_numpy(np.array(histw[1]))
-            histw_evol_y[itw]=torch.from_numpy(np.array(histw[0]))
-            if 0<args.grad:
-                losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw] = measureLossGradient(train_loader, optimizer)
+		if absolute_batch_idx in listatw: #Save states w, measure p(w), measure gradient
+			itw=np.where(listatw==absolute_batch_idx)[0][0]
+			w=getWeights(model)
+			w_evol[itw]=w.clone() #We need this for C(tw,t'=t+tw)
+			histw=np.histogram(w.numpy(),bins=nbins,normed=False,weights=None)
+			histw_evol_x[itw]=torch.from_numpy(np.array(histw[1]))
+			histw_evol_y[itw]=torch.from_numpy(np.array(histw[0]))
+			if 0<args.grad:
+				losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw] = measureLossGradient(train_loader, optimizer)
 
+		if absolute_batch_idx in listatprime: #Measure correlation functions
+			itprime=list(listatprime).index(absolute_batch_idx)
+			w=getWeights(model)
+			for icomb in range(howmany_tprime[itprime]):
+				[itw,it]=which_itwit[itprime][icomb]
+				assert(listatw[itw]+listat[it]==absolute_batch_idx)
+				square_corrw=torch.pow(w-w_evol[itw],2).sum()
+				fourth_corrw=torch.pow(w-w_evol[itw],4).sum()
+				corrw[itw][it]=square_corrw
+				dorrw[itw][it]=fourth_corrw
+				assert(square_corrw>=0)
+				assert(fourth_corrw>=0)
+				if args.grad>0:
+					if args.grad==1:
+						ml,vl,mg2,vg = losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw]
+					elif args.grad==2:
+						if icomb==0:
+							ml,vl,mg2,vg = losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw] if listat[it]==0 else measureLossGradient(train_loader, optimizer)
+				fgrad = open(gradtxt_name, 'a')
+				fgrad.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+
+					str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ str(dorrw.numpy()[itw][it]/(corrw.numpy()[itw][it]*corrw.numpy()[itw][it])) +' '+\
+					str(ml)+' '+str(vl)+' '+str(mg2)+' '+str(vg)+"\n")
+				fgrad.close()
+		optimizer.step()
 
-        if absolute_batch_idx in listatprime: #Measure correlation functions
-            itprime=list(listatprime).index(absolute_batch_idx)
-            w=getWeights(model)
-            if args.grad>0:
-                if absolute_batch_idx in listatw: #gradient was already measured at this time
-                    itw=np.where(listatw==absolute_batch_idx)[0][0]
-                    ml,vl,mg2,vg = losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw]
-                else:
-                    if args.grad==1: #We only take the value at tw
-                        ml,vl,mg2,vg = losstw[itw], varlosstw[itw], grad2tw[itw], vargradtw[itw]
-                    elif args.grad==2:
-                        ml,vl,mg2,vg = measureLossGradient(train_loader, optimizer)
-                    else:
-                        raise SystemExit("args.grad=",args.grad," is not allowed. Should be 0,1 or 2. Abort.")
-            
-            for icomb in range(howmany_tprime[itprime]):
-                [itw,it]=which_itwit[itprime][icomb]
-                assert(listatw[itw]+listat[it]==absolute_batch_idx)
-                square_corrw=torch.pow(w-w_evol[itw],2).sum()
-                fourth_corrw=torch.pow(w-w_evol[itw],4).sum()
-                corrw[itw][it]=square_corrw
-                dorrw[itw][it]=fourth_corrw
-                assert(square_corrw>=0)
-                assert(fourth_corrw>=0)
-                fgrad = open(gradtxt_name, 'a')
-                fgrad.write(str(itw)+' '+str(it)+' '+str(listatw[itw])+' '+str(listat[it])+' '+
-                	str(inv_num_params*corrw[itw][it])+' '+str(inv_num_params*dorrw[itw][it])+' '+ str(dorrw.numpy()[itw][it]/(corrw.numpy()[itw][it]*corrw.numpy()[itw][it])) +' '+\
-                	str(ml)+' '+str(vl)+' '+str(mg2)+' '+str(vg)+"\n")
-                fgrad.close()
+		if args.print_interval and batch_idx % args.print_interval == 0:
+			print('Train Period: {} [{}/{} ({:.0f}%)]\tLoss: {: .6f}'.format(
+				period, batch_idx * len(data), n_step * len(data),
+				100. * batch_idx / n_step, loss.data[0])) 
 
-        optimizer.step()
-        if args.print_interval and batch_idx % args.print_interval == 0:
-            print('Train Period: {} [{}/{} ({:.0f}%)]\tLoss: {: .6f}'.format(
-                period, batch_idx * len(data), n_step * len(data),
-                100. * batch_idx / n_step, loss.data[0])) 
-        if batch_idx==n_step-1:
-            break
+		if batch_idx==n_step-1:
+			break
 
 def test(period,data_loader,print_c=False,label='Test '):
 	model.eval()
@@ -475,7 +470,10 @@ def measureLossGradient(data_loader, optimizer):
 	meanLoss2=0
 
 	#Loop over the data
+	numbatches=0
 	for data, target in data_loader:
+		if np.random.ranf()>.2: #Use only 20% of the data
+			continue
 		if args.cuda:
 			data, target = data.cuda(), target.cuda()
 		data, target = Variable(data, requires_grad=True), Variable(target)
@@ -493,9 +491,10 @@ def measureLossGradient(data_loader, optimizer):
 			if ('weight' in key or 'bias' in key): #Exclude keys that don't have grad, such as running
 				meanGrad[key]+=gradient[key]
 				meanGrad2[key] += (gradient[key]*gradient[key]).sum()
+		numbatches+=1
 
-	meanLoss/=len(data_loader)
-	meanLoss2/=len(data_loader)
+	meanLoss/=numbatches
+	meanLoss2/=numbatches
 
 	#Now join different layers
 	totMeanGrad2 = 0  # <grad>^2 of all the layers
@@ -535,7 +534,7 @@ torch.save(loss_hist,base_path+"_{0}-{1}.hist".format("%05d"%iniPeriod,"%05d"%pe
 #Some more saving #
 ###################
 #Save P(w)
-histfile=file(base_path+'_histw.txt','a')
+histfile=open(base_path+'_histw.txt','ab')
 for itw in range(len(listatw)):
 	delta=histw_evol_x[itw][1]-histw_evol_x[itw][0]
 	xcenters=histw_evol_x[itw][0:nbins].numpy()+0.5*delta
