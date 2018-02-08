@@ -167,9 +167,12 @@ if args.load == 'nil':
 		model = model()
 	iniPeriod=0
 else:
-	model=loadNet(args.load,model)
+#	model=loadNet(args.load,model) #vecchia versione, che non funzionava
+	model=model(pretrained_path=args.load)
 	from re import search
-	iniPeriod=1+int(search('_',args.model,'_(.+?).pyT',args.load).group(1))
+	#iniPeriod=1+int(search('_',args.model,'_(.+?).pyT',args.load).group(1))
+	#Per il momento lo faccio cominciare da zero
+	iniPeriod=0
 
 
 #################################
@@ -223,7 +226,6 @@ if 'default' != args.distr:
 
 # Function that returns a flattened list of all the weights
 def getWeights(mymodel):
-
 	for i,item in enumerate(model.parameters()):
 		if 0==i:
 			full_list=item.data.view(item.data.numel())
