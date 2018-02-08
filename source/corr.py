@@ -474,7 +474,7 @@ def measureLossGradient(data_loader, optimizer):
 	#Loop over the data
 	numbatches=0
 	for data, target in data_loader:
-		if np.random.ranf()>.2: #Use only 20% of the data
+		if np.random.ranf()>.1: #Use only 10% of the data
 			continue
 		if args.cuda:
 			data, target = data.cuda(), target.cuda()
