@@ -1,5 +1,3 @@
-# This code is not good, so please don't look at it.
-
 ## Upgrades necessari
 
 
